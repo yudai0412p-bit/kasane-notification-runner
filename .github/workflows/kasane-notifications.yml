@@ -1,0 +1,36 @@
+name: KASANE notification scheduler
+
+on:
+  schedule:
+    - cron: '2-57/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kasane-notification-scheduler
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trigger KASANE notifications
+        env:
+          KASANE_SITES_TOKEN: ${{ secrets.KASANE_SITES_TOKEN }}
+          KASANE_BASE_URL: https://kasane-daily-rank.quickcake7.chatgpt.site
+        run: |
+          set -euo pipefail
+          auth_header="OAI-Sites-Authorization: Bearer ${KASANE_SITES_TOKEN}"
+
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-all-errors --max-time 30 \
+            -X POST -H "${auth_header}" \
+            "${KASANE_BASE_URL}/api/push/due"
+
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-all-errors --max-time 30 \
+            -X POST -H "${auth_header}" \
+            "${KASANE_BASE_URL}/api/push/nightly"
